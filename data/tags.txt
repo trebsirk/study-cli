@@ -1,0 +1,11 @@
+AWS
+HTTP
+S3
+durability
+encryption
+file transfer
+limits
+monitoring
+storage
+storage classes
+website hosting

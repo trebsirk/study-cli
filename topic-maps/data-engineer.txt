@@ -1,0 +1,13 @@
+iam
+s3
+ec2
+emr
+rds
+lambda
+sns
+sqs
+step
+dynamodb
+cloudwatch
+redshift
+aurora

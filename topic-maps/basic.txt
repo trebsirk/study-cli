@@ -1,0 +1,6 @@
+iam
+s3
+ec2
+lambda
+sns
+sqs
