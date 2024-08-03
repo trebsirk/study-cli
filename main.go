@@ -50,8 +50,15 @@ func printQuizQuestionFromJSON(fname string) {
 // to send log output to log file, use go run main.go next 2>> logfile
 func main() {
 	cmd := os.Args[1]
-	println("cmd: ", cmd)
+	fmt.Println("cmd: ", cmd)
 	switch cmd {
+	case "dev":
+		var tags []string = nil
+		if len(os.Args) >= 3 {
+			tags = os.Args[2:] // []string{}
+		}
+		fmt.Println("tags: ", tags)
+		fmt.Println("fake tags: ", []string{"AWS", "S3"})
 	case "load":
 		fname := os.Args[2] // eg go run load data/test.json
 		utils.LoadFromFile(fname)
@@ -65,8 +72,8 @@ func main() {
 			return
 		}
 		var tags []string = nil
-		if len(os.Args) == 3 {
-			tags = []string{os.Args[2]}
+		if len(os.Args) >= 3 {
+			tags = os.Args[2:]
 		}
 		config := utils.GetConfig()
 		db := utils.GetDB(config)
@@ -74,6 +81,7 @@ func main() {
 		q, err := utils.SelectQuizQuestionFromDB(db, creds.Username, tags)
 		if err != nil {
 			fmt.Println("error selecting quiz question:", err)
+			return
 		}
 		res := utils.AdministerQuizQuestionCLI(q)
 		log.Printf("q=%v, r=%t", q.ID, res)
@@ -89,7 +97,6 @@ func main() {
 				return
 			}
 			user := &structs.User{ID: idInt}
-			fmt.Println("user: ", user)
 			utils.InsertQuizResponseToDB(db, q, user, res)
 		}
 
