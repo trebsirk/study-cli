@@ -46,9 +46,7 @@ func GetIdForUsernameFromDB(db *sql.DB, username string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("found user id ", id)
 	idStr := strconv.Itoa(id)
-	fmt.Println("after conversion to string: ", idStr)
 
 	return idStr, nil
 }

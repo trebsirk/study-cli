@@ -28,8 +28,8 @@ with service_quiz_ids as (
 	select *,
 		first_value(res) OVER (PARTITION BY res_partition order by ts ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) as last_val
 	from
-	(select *, count(res) over (partition by qid order by dd) as res_partition
-	from user_res_last_daily_attempt) a
+		(select *, count(res) over (partition by qid order by dd) as res_partition
+		from user_res_last_daily_attempt) a
 	order by qid, dd
 ), y as (
 	select *, case when res_partition = 0 then false else coalesce(res, last_val) end as last_val2 from x

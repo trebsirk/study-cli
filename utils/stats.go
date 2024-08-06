@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 
@@ -32,15 +34,34 @@ func GetStats() ([]structs.Stats, error) {
 	}
 	defer rows.Close()
 	stats := make([]structs.Stats, 0)
-	var date, service string
-	var pct float32
+	var stat = structs.Stats{}
 	for rows.Next() {
-		if err := rows.Scan(&date, &service, &pct); err != nil {
+		if err := rows.Scan(&stat.Date, &stat.Service, &stat.Pct); err != nil {
 			//return nil, err
 			log.Fatal("Error scanning row:", err)
 		}
 		//fmt.Printf("next topic: %s\n", column1)
-		stats = append(stats, structs.Stats{Date: date, Service: service, Pct: pct})
+		stats = append(stats, stat) //structs.Stats{Date: date, Service: service, Pct: pct})
 	}
 	return stats, nil
+}
+
+// WriteStatsToFile writes an array of Stats structs to a JSON file.
+func WriteStatsToFile(stats []structs.Stats, filename string) error {
+	// Open the file for writing
+	file, err := os.Create(filename)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer file.Close()
+
+	// Create a JSON encoder and write the data to the file
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ") // Pretty print with indentation
+
+	if err := encoder.Encode(stats); err != nil {
+		return fmt.Errorf("failed to encode stats to JSON: %w", err)
+	}
+
+	return nil
 }

@@ -6,11 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
@@ -86,14 +84,15 @@ func SelectQuizQuestionFromDB(db *sql.DB, user string, tags []string) (*structs.
 		fmt.Println("no tags passed ... \n getting tags from file ", tagfname)
 		tags, err = ReadFileToList(tagfname)
 		fmt.Println("found tags: ", tags)
-		rand.Seed(time.Now().Unix()) // initialize global pseudo random generator
-		i := rand.Intn(len(tags))
-		tags = tags[i : i+1]
-		fmt.Println("  using:", tags)
+		//rand.Seed(time.Now().Unix()) // initialize global pseudo random generator
+		//i := rand.Intn(len(tags))
+		//tags = tags[i : i+1]
+		tags = tags[:2] // []string{"S3", "HTML"}
 	}
 	if err != nil {
 		log.Fatal("No tags. Exiting.")
 	}
+	fmt.Println("using tags: ", tags)
 	rows, err := db.Query(query, pq.Array(tags))
 	if err != nil {
 		log.Fatal("Error querying table quiz_data: ", err)
