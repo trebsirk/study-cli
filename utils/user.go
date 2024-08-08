@@ -148,9 +148,11 @@ func ReadCredentialsFromFile() (structs.Credentials, error) {
 }
 
 func ReadCredentialsFromCLI() (structs.Credentials, error) {
+
+	reader := bufio.NewReader(os.Stdin)
+
 	// Prompt the user for username
 	fmt.Print("Enter username: ")
-	reader := bufio.NewReader(os.Stdin)
 	username, err := reader.ReadString('\n')
 	if err != nil {
 		return structs.Credentials{}, err
@@ -165,11 +167,9 @@ func ReadCredentialsFromCLI() (structs.Credentials, error) {
 	}
 	password = strings.TrimSpace(password)
 
-	user := structs.Credentials{Username: username, Password: password}
+	creds := structs.Credentials{Username: username, Password: password}
 
-	WriteCredentialsToFile(&user)
-
-	return user, nil
+	return creds, nil
 }
 
 func WriteCredentialsToFile(creds *structs.Credentials) error {
@@ -184,14 +184,16 @@ func WriteCredentialsToFile(creds *structs.Credentials) error {
 		return err
 	}
 
-	fmt.Println("Credentials successfully written to .credentials file.")
+	fmt.Println("Credentials successfully written to .credentials")
 	return nil
 }
 
-func AcquireUser() {
+func AcquireUser() (*structs.Credentials, error) {
+	infile := true
 	c, err := ReadCredentialsFromFile()
 	if err != nil || c.Password == "" || c.Username == "" {
 		valid := false
+		infile = false
 		for !valid {
 			c, err = ReadCredentialsFromCLI()
 			if err == nil {
@@ -202,7 +204,11 @@ func AcquireUser() {
 	okay := ValidateUser(&c)
 	if !okay {
 		fmt.Println("error validating user", c.Username)
-		return
+		return nil, errors.New("error validating user")
 	}
-	WriteCredentialsToFile(&c)
+	if !infile {
+		WriteCredentialsToFile(&c)
+	}
+
+	return &c, nil
 }

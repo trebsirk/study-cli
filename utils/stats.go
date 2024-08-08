@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,10 +11,7 @@ import (
 	"github.com/trebsirk/study-cli/structs"
 )
 
-func GetStats() ([]structs.Stats, error) {
-	config := GetConfig()
-	db := GetDB(config)
-	defer db.Close()
+func GetStats(db *sql.DB) ([]structs.Stats, error) {
 	// query := "SELECT id, question, candidate_answers, correct_answer FROM quiz_data WHERE '{\"science\"}' <@ tags LIMIT 1"
 	// rows, err := db.Query(query)
 	// regarding tags: <@ for AND, && for OR

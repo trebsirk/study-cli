@@ -7,3 +7,43 @@ CREATE TABLE quiz_data (
     correct_answer TEXT NOT NULL,
     tags TEXT[] NOT NULL
 );
+
+
+DROP TABLE IF EXISTS user_sessions;
+
+CREATE TABLE user_sessions (
+    session_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    token TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    ip_address VARCHAR(45),  -- Supports both IPv4 and IPv6 addresses
+    user_agent TEXT,
+    CONSTRAINT fk_user
+        FOREIGN KEY(user_id) 
+	    REFERENCES users(id) 
+	    ON DELETE CASCADE
+);
+
+
+DELETE FROM quiz_results;
+DROP TABLE IF EXISTS quiz_results;
+CREATE TABLE quiz_results (
+    id SERIAL PRIMARY KEY,
+    quiz_id INT NOT NULL,
+    ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    res BOOLEAN NOT NULL,
+    FOREIGN KEY (quiz_id) REFERENCES quiz_data(id) ON DELETE CASCADE
+);
+
+
+DROP TABLE IF EXISTS users;
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_username ON users (username);
+
+

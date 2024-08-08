@@ -31,3 +31,13 @@ type Credentials struct {
 	Username string
 	Password string
 }
+
+type UserSession struct {
+	SessionID int       `db:"session_id" json:"session_id"`
+	UserID    int       `db:"user_id" json:"user_id"`
+	Token     string    `db:"token" json:"token"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	ExpiresAt time.Time `db:"expires_at" json:"expires_at"`
+	IPAddress string    `db:"ip_address" json:"ip_address"`
+	UserAgent string    `db:"user_agent" json:"user_agent"`
+}

@@ -50,7 +50,10 @@ func printQuizQuestionFromJSON(fname string) {
 // to send log output to log file, use go run main.go next 2>> logfile
 func main() {
 	cmd := os.Args[1]
-	fmt.Println("cmd: ", cmd)
+	//fmt.Println("cmd: ", cmd)
+	config := utils.GetConfig()
+	db := utils.GetDB(config)
+	defer db.Close()
 	switch cmd {
 	case "dev":
 		var tags []string = nil
@@ -137,51 +140,64 @@ func main() {
 		doneAckChan := make(chan bool)
 		statsChan := make(chan []structs.Stats)
 		timeChan := make(chan time.Time, 2)
-		go func() {
+
+		go func() { // show spinner while getting stats
 			s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
 			s.Color("cyan")
 			s.Suffix = " getting stats"
 			s.Start()
-			<-doneChan
+			<-doneChan // wait for goroutine below
 			s.Stop()
-			// for s.Active() {
-			// 	time.Sleep(time.Millisecond * 100)
-			// }
-			doneAckChan <- true
+			doneAckChan <- !s.Active()
 		}()
+
 		go func() { // get stats
 			timeChan <- time.Now()
-			stats, err := utils.GetStats()
+			stats, err := utils.GetStats(db)
 			timeChan <- time.Now()
 			if err != nil {
 				fmt.Println("error getting stats:", err)
 				return
 			}
-			time.Sleep(1 * time.Second)
+			time.Sleep(2 * time.Second)
 			statsChan <- stats
 		}()
+
 		defer close(doneChan)
 		defer close(statsChan)
 		defer close(doneAckChan)
+
 		select {
 		case stats_res := <-statsChan:
 			doneChan <- true
-			<-doneAckChan
+			okay := <-doneAckChan
+			if !okay {
+				fmt.Println("Error stopping spinner")
+			}
+			fname := "data/stats.json"
+			if err := utils.WriteStatsToFile(stats_res, fname); err != nil {
+				fmt.Println("Error writing data to", err)
+			} else {
+				fmt.Println("Success writing data to", fname)
+			}
+
 			for _, s := range stats_res {
 				fmt.Println(s)
 			}
 		case <-time.After(3 * time.Second):
 			doneChan <- true
-			<-doneAckChan
+			okay := <-doneAckChan
+			if !okay {
+				fmt.Println("Error stopping spinner")
+			}
 			fmt.Println("get stats timed out")
 		}
+
 		a, b := <-timeChan, <-timeChan
 		fmt.Println("GetStats took", b.Sub(a))
 
 	case "all-users":
-		config := utils.GetConfig()
-		db := utils.GetDB(config)
-		defer db.Close()
+
 		users, err := utils.GetUsersFromDB(db)
 		if err != nil {
 			log.Fatal(err)
@@ -190,23 +206,55 @@ func main() {
 			fmt.Println(i, " ", user)
 		}
 	case "check-creds":
-		c, err := utils.ReadCredentialsFromFile()
-		if err != nil || c.Password == "" || c.Username == "" {
-			valid := false
-			for !valid {
-				c, err = utils.ReadCredentialsFromCLI()
-				if err == nil {
-					valid = true
-				}
-			}
+		creds, err := utils.AcquireUser()
+		if err != nil {
+			fmt.Println("error", err)
+			break
 		}
-		okay := utils.ValidateUser(&c)
-		if !okay {
-			fmt.Println("error validating user", c.Username)
+		fmt.Println("user", creds.Username, "validated")
+	case "login":
+		creds, err := utils.AcquireUser()
+		if err != nil {
+			fmt.Println("error", err)
+			break
+		}
+		fmt.Println("got creds for", creds.Username)
+		// insert session into to db
+		idStr, err := utils.GetIdForUsernameFromDB(db, creds.Username)
+		if err != nil {
+			fmt.Println("error:", err)
 			return
 		}
-		fmt.Println("user", c.Password, "validated")
+		idInt, err := strconv.Atoi(idStr)
+		if err != nil {
+			fmt.Println("error. bad id:", err)
+			return
+		}
+		fmt.Println("generating new session info ...")
+		sess := utils.CreateUserSession(idInt)
+		fmt.Println("session:", sess)
 
+	case "renew-session":
+		creds, err := utils.AcquireUser()
+		if err != nil {
+			fmt.Println("error", err)
+			break
+		}
+		fmt.Println("got creds for", creds.Username)
+		// insert session into to db
+		idStr, err := utils.GetIdForUsernameFromDB(db, creds.Username)
+		if err != nil {
+			fmt.Println("error:", err)
+			return
+		}
+		idInt, err := strconv.Atoi(idStr)
+		if err != nil {
+			fmt.Println("error. bad id:", err)
+			return
+		}
+		fmt.Println("generating new session info ...")
+		sess := utils.CreateUserSession(idInt)
+		fmt.Println("session:", sess)
 	}
 
 }
