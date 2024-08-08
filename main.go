@@ -255,6 +255,7 @@ func main() {
 		fmt.Println("generating new session info ...")
 		sess := utils.CreateUserSession(idInt)
 		fmt.Println("session:", sess)
+		utils.InsertSessionToDB(db, sess)
 	}
 
 }

@@ -2,9 +2,13 @@ package utils
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/trebsirk/study-cli/structs"
@@ -20,8 +24,28 @@ func CreateUserSession(id int) *structs.UserSession {
 	return &structs.UserSession{UserID: id, Token: token, CreatedAt: created_at, ExpiresAt: expires_at}
 }
 
-func InsertSessionToDB(*structs.UserSession) {
+func InsertSessionToDB(db *sql.DB, sess *structs.UserSession) error {
+	var err error
+	var content []byte
 
+	content, err = os.ReadFile("sql/insert_session_info.sql")
+	if err != nil {
+		log.Fatal("Error reading query file:", err)
+	}
+	query := string(content)
+
+	query = strings.ReplaceAll(query, ":user_id", strconv.Itoa(sess.UserID))
+	query = strings.ReplaceAll(query, ":token", sess.Token)
+	query = strings.ReplaceAll(query, ":created_at", sess.CreatedAt.Format("2006-01-02 15:04:05"))
+	query = strings.ReplaceAll(query, ":expires_at", sess.ExpiresAt.Format("2006-01-02 15:04:05"))
+
+	_, err = db.Exec(query)
+	if err != nil {
+		log.Fatal("Error inserting session info: ", err)
+		return err
+	}
+
+	return nil
 }
 
 func GenerateSecureToken(length int) string {
@@ -33,6 +57,7 @@ func GenerateSecureToken(length int) string {
 }
 
 func WriteSessionToFile(sess *structs.UserSession) error {
+	// write session info to DEFAULT_SESSION_FILE
 	file, err := os.Create(DEFAULT_SESSION_FILE)
 	if err != nil {
 		return err
